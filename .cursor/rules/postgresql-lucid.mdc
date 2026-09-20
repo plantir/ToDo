@@ -1,0 +1,86 @@
+---
+description: PostgreSQL + Lucid ORM - migrations, models, relations, transactions, query conventions, snake_case naming
+globs: **/{app/models,database/migrations,database/factories}/**/*.ts
+alwaysApply: false
+---
+
+# PostgreSQL + Lucid ORM
+
+## Naming
+
+Database: `snake_case` plural tables, `snake_case` columns. TypeScript: `PascalCase` classes, `camelCase` properties.
+
+| Layer | Convention | Example |
+|-------|-----------|---------|
+| Table | snake_case plural | `purchase_requests` |
+| Column | snake_case | `price_cents` |
+| Model | PascalCase | `PurchaseRequest` |
+| Property | camelCase | `priceCents` |
+| FK | `<entity>_id` | `requester_id` |
+
+## Migrations
+
+- Generate via `node ace make:migration <name>` (timestamp prefix is auto).
+- Always define `up()` and `down()`.
+- Foreign keys: `.unsigned().references('id').inTable('parent').onDelete('RESTRICT')` (use `CASCADE` only when the child truly cannot outlive the parent).
+- Timestamps: `created_at` notNullable, `updated_at` and other lifecycle timestamps nullable.
+
+```typescript
+table
+  .integer('requester_id')
+  .unsigned()
+  .notNullable()
+  .references('id')
+  .inTable('users')
+  .onDelete('RESTRICT')
+```
+
+- Money columns: `integer` (cents) — never float/decimal.
+- Status columns: `string` with a `.defaultTo(...)` — status unions live in the model.
+- Index what you filter/sort on: `.index()` on status, FKs, business numbers.
+
+## Models
+
+```typescript
+export default class PurchaseRequest extends BaseModel {
+  @column({ isPrimary: true })
+  declare id: number
+
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+
+  @belongsTo(() => User, { foreignKey: 'requesterId' })
+  declare requester: BelongsTo<typeof User>
+
+  @computed()
+  get isDraft(): boolean {
+    return this.status === 'draft'
+  }
+}
+```
+
+- Always `declare` properties with decorators; never assign in class body.
+- Passwords/secrets: `@column({ serializeAs: null })`.
+- Domain checks as computed getters (`canBeEdited`), not inline controller conditions.
+- Load relations explicitly with `.preload()` before serializing — never rely on lazy loads in controllers.
+
+## Transactions
+
+Any multi-write operation must be atomic:
+
+```typescript
+await db.transaction(async (trx) => {
+  const order = await Order.create({...}, { client: trx })
+  await LineItem.create({...}, { client: trx })
+  return order
+})
+```
+
+Existing models inside a transaction: `model.useTransaction(trx)` before `save()`.
+
+## Queries
+
+- Use query builder for ownership scoping: `.where('owner_id', user.id)`.
+- Aggregate stats via `db.from('table')` builder, not model loops.
+- `.paginate(page, limit)` for lists; `.preload()` to avoid N+1.
+- Search: `.where((b) => b.where(...).orWhere(...))` with parameterized `like`.

@@ -1,0 +1,34 @@
+---
+description: Security - auth middleware, ownership scoping, secrets handling, input hardening, data exposure prevention
+globs: **/{app,start,config}/**/*.ts
+alwaysApply: false
+---
+
+# Security
+
+## Auth & Access
+
+- Every non-public route gets `.use(middleware.auth())` — never rely on controller-side checks alone.
+- `auth.user` is only non-null after the auth middleware; assert with `auth.user!` exclusively on guarded routes.
+- Authorization order: authentication (middleware) → ownership (owner check or query scope) → role.
+- Users must not read/modify other users' resources — always scope queries by owner, so wrong-owner returns `404` (not `403`, to avoid resource enumeration).
+
+## Secrets
+
+- Never commit secrets: `.env` is gitignored; new vars go into `start/env.ts` schema + `.env.example` with safe placeholder values.
+- No secrets, tokens, or passwords in logs or error messages.
+- `password` column uses `serializeAs: null`; auth endpoints never return it.
+- Tokens: create via `User.accessTokens.create(user)`; client sends `Authorization: Bearer <token>`.
+
+## Input Hardening
+
+- Every request body and query string passes a validator — no raw `request.body()` reads.
+- Bound everything: `maxLength` on strings, `.max(100)` on `limit`, explicit enums for sort/status fields (prevents SQL injection via column names).
+- Build `like` queries only from validated input.
+
+## Data Exposure
+
+- Serialize only via transformers with explicit response interfaces — never `model.toJSON()` of a whole model.
+- Sensitive columns (`password`, internal flags) must be `serializeAs: null`.
+- Error responses leak nothing internal: production debug off (`protected debug = !app.inProduction`), generic messages + `E_` codes.
+- CORS config in `config/cors.ts` must be tightened for production.

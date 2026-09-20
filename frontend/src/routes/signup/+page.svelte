@@ -1,0 +1,77 @@
+<script lang="ts">
+  import { goto } from '$app/navigation'
+  import { resolve } from '$app/paths'
+  import { AuthShell } from '$lib/components/AuthShell'
+  import { TextField } from '$lib/components/TextField'
+  import { session } from '$lib/state/session.svelte'
+  import { ApiError } from '$lib/api/client'
+
+  let fullName = $state('')
+  let email = $state('')
+  let password = $state('')
+  let passwordConfirmation = $state('')
+  let error = $state('')
+  let pending = $state(false)
+
+  async function submit(event: Event): Promise<void> {
+    event.preventDefault()
+    error = ''
+    if (password !== passwordConfirmation) {
+      error = 'تکرار رمز عبور مطابقت ندارد'
+      return
+    }
+    pending = true
+    try {
+      await session.register(fullName, email, password)
+      await goto(resolve('/daily'))
+    } catch (caught) {
+      error =
+        caught instanceof ApiError
+          ? 'ثبت‌نام ناموفق بود. ایمیل را بررسی کنید'
+          : 'ثبت‌نام ناموفق بود'
+    } finally {
+      pending = false
+    }
+  }
+</script>
+
+<AuthShell title="تقویم تسک" subtitle="ساخت حساب برای شروع برنامه‌ریزی با پومودورو">
+  <form class="flex w-[360px] max-w-full flex-col gap-4" onsubmit={submit}>
+    <TextField label="نام" placeholder="مثلاً آرمین" autocomplete="name" bind:value={fullName} />
+    <TextField
+      label="ایمیل"
+      type="email"
+      placeholder="name@example.com"
+      autocomplete="email"
+      bind:value={email}
+    />
+    <TextField
+      label="رمز عبور"
+      type="password"
+      placeholder="••••••••"
+      autocomplete="new-password"
+      bind:value={password}
+    />
+    <TextField
+      label="تکرار رمز عبور"
+      type="password"
+      placeholder="••••••••"
+      autocomplete="new-password"
+      bind:value={passwordConfirmation}
+    />
+    {#if error}
+      <p class="text-sm text-danger">{error}</p>
+    {/if}
+    <button
+      type="submit"
+      class="rounded-input bg-brand px-5 py-3.5 text-[15px] font-semibold text-white disabled:opacity-60"
+      disabled={pending}
+    >
+      ثبت‌نام
+    </button>
+    <p class="pt-2 text-center text-[13px] text-muted">
+      قبلاً حساب دارید؟
+      <a href={resolve('/login')} class="font-semibold text-brand">ورود</a>
+    </p>
+  </form>
+</AuthShell>

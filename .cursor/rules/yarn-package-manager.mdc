@@ -1,0 +1,26 @@
+---
+description: Yarn is the only allowed package manager - use yarn for all install/add/remove/run operations
+alwaysApply: true
+---
+
+# Package Manager: Yarn
+
+This project uses **Yarn** exclusively. Never use `npm`, `pnpm`, or `bun` for any package operation.
+
+## Commands
+
+```bash
+yarn install              # install dependencies
+yarn add <pkg>            # add a dependency
+yarn add -D <pkg>         # add a dev dependency
+yarn remove <pkg>         # remove a dependency
+yarn run <script>         # run a package.json script (yarn <script> shorthand works)
+```
+
+## Rules
+
+- Only `yarn.lock` is committed. Never commit `package-lock.json`, `pnpm-lock.yaml`, or other lock files — delete them if found.
+- Never delete or regenerate `yarn.lock` to "fix" an install issue; resolve the underlying conflict instead.
+- `package.json` and `yarn.lock` are always committed together in the same commit.
+- Prefer the latest stable version when adding dependencies; never pin arbitrary old versions.
+- Use `yarn install --frozen-lockfile` in CI.

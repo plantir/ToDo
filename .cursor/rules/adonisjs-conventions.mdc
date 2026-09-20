@@ -1,0 +1,87 @@
+---
+description: AdonisJS v6 conventions - controllers, VineJS validators, routes, middleware, env, typed domain errors
+globs: **/{app/controllers,app/validators,app/middleware,start,config}/**/*.ts
+alwaysApply: false
+---
+
+# AdonisJS v6 Conventions
+
+## Controllers
+
+- One resource per controller, `export default class`, methods: `index/show/store/update/destroy` + custom actions.
+- Instantiated services as private fields: `private purchaseRequestService = new PurchaseRequestService()`.
+- Validate first: `await request.validateUsing(createXValidator)`.
+- Ownership + status guards in the controller; state transitions in services.
+
+```typescript
+async store({ request, auth, response }: HttpContext) {
+  const user = auth.user!
+  const data = await request.validateUsing(createPurchaseRequestValidator)
+  const model = await this.service.create(data, user)
+  return response.created({ data: Transformer.transformDetail(model) })
+}
+```
+
+## Validators (VineJS)
+
+- One file per domain in `app/validators/`, named `<domain>.ts`, export multiple compiled schemas:
+
+```typescript
+import vine from '@vinejs/vine'
+
+export const createOrderValidator = vine.compile(
+  vine.object({
+    notes: vine.string().maxLength(2000).optional(),
+    items: vine
+      .array(
+        vine.object({
+          sourceId: vine.number().positive(),
+          priceCents: vine.number().min(0),
+        })
+      )
+      .optional(),
+  })
+)
+```
+
+- Always set explicit `maxLength` on strings and `.max()` on arrays/limits (list `limit` max 100).
+- Query params are validated too (`page`, `limit`, `sort`, `order`, `q`).
+- Enumerate allowed values with `vine.enum([...])` — reuse the model's exported unions as `const` arrays.
+- Validation failures auto-return `422` with `E_VALIDATION_FAILED` via the exception handler.
+
+## Routes
+
+- Lazy controllers: `const XController = () => import('#controllers/x_controller')`.
+- Group by resource with `.prefix()` and `.use(middleware.auth())`:
+
+```typescript
+router
+  .group(() => {
+    router.get('/', [OrdersController, 'index'])
+    router.post('/:id/submit', [OrdersController, 'submit'])
+  })
+  .prefix('/orders')
+  .use(middleware.auth())
+```
+
+- Register named middleware in `start/kernel.ts`; apply via `.use(middleware.auth())`.
+- New env vars must be added to `start/env.ts` schema **and** `.env.example`.
+
+## Environment
+
+`start/env.ts` validates at boot. Never read `process.env` directly — use `env.get('KEY')`.
+
+## Error Handling
+
+Domain errors are thrown from services as typed classes with `name` set:
+
+```typescript
+export class InvalidStatusTransitionError extends Error {
+  constructor(from: OrderStatus, to: string) {
+    super(`Invalid status transition from '${from}' to '${to}'`)
+    this.name = 'InvalidStatusTransitionError'
+  }
+}
+```
+
+Map them to HTTP in `app/exceptions/handler.ts` with an `E_` code. Controllers never try/catch domain errors for control flow.

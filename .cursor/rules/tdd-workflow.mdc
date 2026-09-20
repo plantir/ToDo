@@ -1,0 +1,36 @@
+---
+description: Test-first development - write failing tests before production code (red/green/refactor)
+alwaysApply: true
+---
+
+# TDD Workflow (Red → Green → Refactor)
+
+Development is test-first. For every feature and bug fix, write the failing test BEFORE the production code.
+
+## Cycle
+
+1. **Red** — write a test expressing the desired behavior. Run it and confirm it fails for the right reason (not a typo/import error).
+2. **Green** — write the minimum production code to make it pass. No speculative/extra functionality.
+3. **Refactor** — clean up production and test code while keeping the suite green.
+
+## Rules
+
+- Never add production code without a failing test that requires it.
+- Never delete or skip a test to make the suite pass — fix the code, or fix the test only if its expectation was wrong.
+- Bug fixes start with a regression test that reproduces the bug (fails on current code, passes after the fix).
+- One behavior per test; name tests as behavior sentences: `test('rejects approval when any item is pending', ...)`.
+- While iterating, run only the relevant spec file; run the full suite (`yarn test`) before finishing.
+
+## Choose the Test Level First
+
+- Business rule / state transition / service logic → **unit test** (`tests/unit/`).
+- Endpoint / validation / auth / role guard / serialization → **functional test** (`tests/functional/`).
+
+## Definition of Done
+
+- The new test was written first and covers the change (happy path + failure cases).
+- Full test suite green; lint and typecheck clean (see `code-quality-gates.mdc`).
+
+## Legacy / Untested Code
+
+When touching untested code, first add a characterization test capturing its current behavior, then change it under that safety net.

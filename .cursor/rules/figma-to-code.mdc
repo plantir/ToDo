@@ -1,0 +1,31 @@
+---
+description: Figma-to-code workflow - MCP design context first, reference-only translation, RTL mirroring of physical utilities
+alwaysApply: false
+---
+
+# Figma → Code Workflow
+
+1. Call the Figma MCP `get_design_context` on the target node BEFORE writing any code.
+2. Treat the generated code as a REFERENCE only — always translate it to the project's stack (framework + UI kit components).
+3. Map design elements to existing kit/project components first. Fall back to custom markup only when nothing matches.
+4. Icons/images: export as SVG first (see `svg-icon-components.mdc`) — Figma MCP asset URLs expire (~7 days). NEVER hand-write SVG paths or invent placeholder icons. Raster (PNG/WebP) into `static/assets/<feature>/` only for inherently bitmap assets.
+5. Auto-layout maps to flex/grid utilities; keep spacing, radii and font sizes faithful to the design.
+6. Hints priority: Code Connect > component docs > design annotations > design tokens > raw hex/absolute positioning.
+
+## RTL Mirroring (critical for RTL apps)
+
+The app is RTL (`dir="rtl"` on `<html>`), but generated Figma code is written with **LTR physical utilities** (`left-*`, `right-*`, `pl-*`, `pr-*`, `ml-*`, `mr-*`, `text-left`). Physical utilities do NOT flip in an RTL document, so using them verbatim places everything **mirrored** compared to the design. Always convert:
+
+| Figma output               | Write instead (logical)   |
+| -------------------------- | ------------------------- |
+| `left-*` / `right-*`       | `inset-e-*` / `inset-s-*` |
+| `pl-*` / `pr-*`            | `pe-*` / `ps-*`           |
+| `ml-*` / `mr-*`            | `me-*` / `ms-*`           |
+| `text-left` / `text-right` | `text-end` / `text-start` |
+
+Additional mirroring rules:
+
+- **DOM order**: keep DOM order equal to the design's visual right-to-left reading order — do NOT reverse the children yourself.
+- **Icons next to text**: Figma may report an icon as "left of text" but in the rendered RTL layout that position is the **end** side. Judge leading/trailing by the design screenshot, not by the generated code's physical side.
+- **Directional icons** (arrows, chevrons, "next"): flip only if the asset itself points the wrong way for RTL — never mirror generic icons.
+- **Absolute centering** (`-translate-x-1/2 left-1/2`) is direction-neutral and stays as-is; directional x-axis translates may need flipping.

@@ -1,0 +1,20 @@
+---
+description: SvelteKit project structure - routing, lib folders, naming conventions, UI kit usage policy
+alwaysApply: false
+---
+
+# SvelteKit Project Structure
+
+## File & Folder Conventions
+
+- Routes in `src/routes` (SvelteKit file-based routing); shared code in `src/lib`.
+- Components: `src/lib/components/ComponentName/ComponentName.svelte` with an `index.ts` barrel export.
+- Utilities: `src/lib/utils`; shared types: `src/lib/types`.
+- PascalCase for component files/folders, camelCase for utilities, kebab-case for route files.
+- If the project uses route groups (e.g. `(panel)`), put new pages inside the existing group unless told otherwise.
+
+## UI Kit Policy
+
+- If the project has a UI kit dependency, ALWAYS check it for an existing component (Button, Input, Card, Table, ...) before writing custom markup. Import from the package — never copy kit source into the repo.
+- Compose kit components via props/snippets. Build a custom component only when the kit has no match.
+- If the kit exposes a component catalog/doc source, consult it instead of guessing prop names.

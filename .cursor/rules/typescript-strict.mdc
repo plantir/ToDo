@@ -1,0 +1,33 @@
+---
+description: Strict TypeScript standards - no any, explicit return types, import type, literal unions, null handling
+globs: **/*.ts, **/*.svelte.ts
+alwaysApply: false
+---
+
+# TypeScript Standards
+
+- Typecheck must pass with zero errors before finishing any task.
+- No `any`. Use `unknown` with narrowing, or a precise type.
+- Public methods declare explicit return types.
+- Use `import type` for type-only imports.
+
+## String Literal Unions over enums
+
+```typescript
+export type OrderStatus = 'draft' | 'pending_approval' | 'approved'
+export type UserRole = 'expert' | 'manager' | 'admin'
+```
+
+- Label maps: `Record<UnionType, Value>` (e.g. `STATUS_LABELS`). Reuse existing unions — never duplicate status strings inline.
+
+## Null Handling
+
+- Nullable values are typed `| null`, not optional (`?`).
+- Use `!` only for framework-guaranteed values (e.g. `auth.user!` on auth-guarded routes).
+- Normalize optional validated input with `x || null` — never leave `undefined` in DB writes.
+- Prefer `??` over `||` when `0` or `''` are valid values.
+
+## Functions
+
+- Small, single-purpose. Extract helpers as private methods or services.
+- Prefer pure functions / `static` transformers with typed response interfaces.

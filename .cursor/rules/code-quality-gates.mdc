@@ -1,0 +1,20 @@
+---
+description: Quality gates - lint, format and typecheck must pass after every change before finishing
+alwaysApply: true
+---
+
+# Code Quality Gates
+
+After ANY code change, before reporting the task done:
+
+1. Lint passes with zero errors and zero warnings (typically `yarn lint`).
+2. Formatting is clean per the repo's Prettier config (typically `yarn format`).
+3. Typecheck passes with zero errors (typically `yarn typecheck`; Svelte projects: `yarn check` for svelte-check + TS).
+
+## Rules
+
+- Fix lint/format/type issues you introduced — never leave them for later.
+- Never weaken or edit lint/formatter configs to make a check pass; fix the code instead.
+- No inline suppressions (`eslint-disable`, `ts-ignore`, ...) without a one-line justification comment on the same line.
+- Prettier config stays as configured in the repo — do not override it with local options or inline pragmas.
+- If the project lacks one of these scripts, say so explicitly instead of silently skipping the gate.
