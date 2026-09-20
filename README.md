@@ -8,9 +8,9 @@ Persian RTL task calendar with Pomodoro capacity planning. Greenfield app in thi
 
 ## Requirements
 
-- Node.js 24+ (Adonis 7)
+- Node.js 24+ (Adonis 7) — or Docker / Docker Compose for the web stack
 - Yarn 1.22 for the backend (`yarn` classic) and Yarn 4 / Corepack for `frontend/` and `desktop/`
-- PostgreSQL 16+
+- PostgreSQL 16+ (skipped when using Compose)
 - For desktop builds: [Rust](https://www.rust-lang.org/tools/install) + [Tauri Linux/Windows prerequisites](https://v2.tauri.app/start/prerequisites/)
 
 ## Database
@@ -42,12 +42,35 @@ node ace db:seed
 
 `backend/.env.example` uses placeholder DB credentials (`todo` / `todo`). Change them for any shared or production machine.
 
+## Docker Compose (web + API + Postgres)
+
+Production-style multi-stage images for local use. Desktop/Tauri is not included (native). The browser on your machine talks to the **published** ports, so `PUBLIC_API_URL` must be `http://localhost:<BACKEND_PORT>/api/v1`, not the internal `backend` hostname.
+
+```bash
+cp .env.example .env
+docker compose up --build
+```
+
+| Service | Host URL | Notes |
+| --- | --- | --- |
+| Frontend | http://localhost:5173 | nginx serving the SvelteKit static SPA |
+| Backend | http://localhost:3333 | Adonis API (`/api/v1`) |
+| Postgres | localhost:5432 | volume `postgres_data` |
+
+The API waits until Postgres is healthy, then runs migrations and (by default) the demo seed.
+
 Demo account after seed:
 
 - email: `demo@example.com`
 - password: `password123`
 
-## Run the web app
+Skip seed with `RUN_SEED=false` in `.env`. Change host ports with `FRONTEND_PORT` / `BACKEND_PORT` / `POSTGRES_PORT`. If you change `BACKEND_PORT` or `PUBLIC_API_URL`, rebuild the frontend image so the baked-in API URL matches (`docker compose up --build`).
+
+Stop and remove containers (keep the DB volume): `docker compose down`. Wipe the database too: `docker compose down -v`.
+
+`docker compose config` checks the file. Compose reads `.env` in the repo root; do not commit it.
+
+## Run the web app (without Docker)
 
 Terminal 1 — API (http://localhost:3333):
 

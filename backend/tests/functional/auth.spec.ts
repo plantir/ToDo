@@ -1,5 +1,29 @@
 import { test } from '@japa/runner'
 import testUtils from '@adonisjs/core/services/test_utils'
+import { dataOf } from '../helpers/envelope.js'
+
+type AuthUser = {
+  email: string
+  fullName: string | null
+  password?: unknown
+}
+
+type AuthPayload = {
+  token: string
+  user: AuthUser
+}
+
+type SettingsPayload = {
+  dailyPomoLimit: number
+  pomoDurationMinutes: number
+  workingDays: number[]
+  weeklyCapacity: number
+  monthlyCapacity: number
+}
+
+type ProfilePayload = {
+  email: string
+}
 
 test.group('Auth', (group) => {
   group.each.setup(() => testUtils.db().migrate())
@@ -12,10 +36,11 @@ test.group('Auth', (group) => {
     })
 
     response.assertStatus(200)
-    assert.equal(response.body().data.user.email, 'armin@example.com')
-    assert.equal(response.body().data.user.fullName, 'آرمین')
-    assert.isString(response.body().data.token)
-    assert.isUndefined(response.body().data.user.password)
+    const payload = dataOf<AuthPayload>(response)
+    assert.equal(payload.user.email, 'armin@example.com')
+    assert.equal(payload.user.fullName, 'آرمین')
+    assert.isString(payload.token)
+    assert.isUndefined(payload.user.password)
   })
 
   test('creates default settings on register', async ({ client, assert }) => {
@@ -28,14 +53,15 @@ test.group('Auth', (group) => {
 
     const response = await client
       .get('/api/v1/settings')
-      .header('Authorization', `Bearer ${signup.body().data.token}`)
+      .header('Authorization', `Bearer ${dataOf<AuthPayload>(signup).token}`)
 
     response.assertStatus(200)
-    assert.equal(response.body().data.dailyPomoLimit, 10)
-    assert.equal(response.body().data.pomoDurationMinutes, 25)
-    assert.deepEqual(response.body().data.workingDays, [6, 0, 1, 2, 3])
-    assert.equal(response.body().data.weeklyCapacity, 50)
-    assert.equal(response.body().data.monthlyCapacity, 200)
+    const settings = dataOf<SettingsPayload>(response)
+    assert.equal(settings.dailyPomoLimit, 10)
+    assert.equal(settings.pomoDurationMinutes, 25)
+    assert.deepEqual(settings.workingDays, [6, 0, 1, 2, 3])
+    assert.equal(settings.weeklyCapacity, 50)
+    assert.equal(settings.monthlyCapacity, 200)
   })
 
   test('rejects duplicate email', async ({ client }) => {
@@ -76,8 +102,9 @@ test.group('Auth', (group) => {
     })
 
     response.assertStatus(200)
-    assert.equal(response.body().data.user.email, 'login@example.com')
-    assert.isString(response.body().data.token)
+    const payload = dataOf<AuthPayload>(response)
+    assert.equal(payload.user.email, 'login@example.com')
+    assert.isString(payload.token)
   })
 
   test('rejects invalid credentials', async ({ client }) => {
@@ -106,10 +133,10 @@ test.group('Auth', (group) => {
 
     const response = await client
       .get('/api/v1/account/profile')
-      .header('Authorization', `Bearer ${signup.body().data.token}`)
+      .header('Authorization', `Bearer ${dataOf<AuthPayload>(signup).token}`)
 
     response.assertStatus(200)
-    assert.equal(response.body().data.email, 'me@example.com')
+    assert.equal(dataOf<ProfilePayload>(response).email, 'me@example.com')
   })
 
   test('rejects profile access without a token', async ({ client }) => {
