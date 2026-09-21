@@ -1,0 +1,37 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/vazirmatn';
+
+@theme {
+  --font-sans: 'Vazirmatn Variable', Vazirmatn, Tahoma, sans-serif;
+  --color-canvas: #f5f6f8;
+  --color-ink: #1a1b1f;
+  --color-muted: #6b7280;
+  --color-subtle: #9ca3af;
+  --color-line: #e6e8ec;
+  --color-brand: #2563eb;
+  --color-brand-soft: #eff6ff;
+  --color-ok: #10b981;
+  --color-ok-soft: #ecfdf5;
+  --color-danger: #ef4444;
+  --color-danger-soft: #fef2f2;
+  --color-p1: #ef4444;
+  --color-p2: #f97316;
+  --color-p3: #3b82f6;
+  --color-p4: #64748b;
+  --radius-card: 14px;
+  --radius-input: 12px;
+  --radius-chip: 20px;
+  --shadow-card: 0 10px 30px rgba(26, 27, 31, 0.04);
+}
+
+html,
+body {
+  min-height: 100%;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+body {
+  margin: 0;
+}

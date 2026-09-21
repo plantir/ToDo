@@ -1,0 +1,32 @@
+---
+description: Tailwind CSS 4 styling rules - logical RTL utilities, canonical classes, theme tokens, no hardcoded values
+globs: **/*.svelte, **/*.css
+alwaysApply: false
+---
+
+# Tailwind CSS 4 Styling
+
+- Style with Tailwind utilities in markup. Avoid `<style>` blocks unless a value is truly dynamic.
+- Spacing/sizing from the Tailwind scale; arbitrary values (`w-[73px]`) only when the design demands an exact pixel.
+
+## RTL-First (when the app is `dir="rtl"`)
+
+- Use logical utilities ONLY — `ps-*` / `pe-*` (padding), `ms-*` / `me-*` (margin), `inset-s-*` / `inset-e-*` (inline inset), `inset-bs-*` / `inset-be-*` (block inset), `text-start` / `text-end`.
+- Never use physical utilities: `pl-*`, `pr-*`, `ml-*`, `mr-*`, `left-*`, `right-*`, and not the deprecated `start-*` / `end-*` (canonical: `inset-s-*` / `inset-e-*`).
+- Never add `rtl:` / `ltr:` variants to compensate — the layout is always one direction.
+- Flex/grid children auto-mirror in RTL — keep DOM order equal to the visual reading order; never reverse children yourself.
+
+## Canonical Classes
+
+Prefer canonical forms: `text-sm/5` over `text-sm leading-5`, `bg-gray-100!` over `!bg-gray-100`, named variants over arbitrary ones when an equivalent exists.
+
+## Theme Tokens over Hardcoded Values
+
+- Colors: prefer theme tokens. Raw hex only when the value comes from the design and no token exists — and if the same hex appears again, add it to the theme instead of repeating it.
+- Gradients: NO raw hex inside arbitrary values (`bg-[linear-gradient(...)]` with hex stops). Register the gradient as a theme token (`--color-*` / CSS variable) or a custom `@utility` in `app.css` first, then reference it by utility name.
+- Radii & shadows: NEVER hardcode a radius/shadow in an arbitrary value when a theme token exists. Check `app.css` `@theme` first: `--radius-glass: 20px` → `rounded-glass`, `--shadow-card` → `shadow-card`. If a design value has no token yet, add it to `@theme` (`--radius-*` / `--shadow-*`) and use the named utility; arbitrary values only for one-off, non-repeated design demands.
+
+## Reuse
+
+- Extract repeated class combos into components or `tailwind-variants`. Threshold: the SECOND occurrence — once a combo appears twice, extract it no matter how short; never copy-paste class strings across files.
+- Page-level decorative layers (fixed gradients, textures, noise overlays) live in a dedicated reusable component — never inline in `+layout.svelte` or `+page.svelte`.

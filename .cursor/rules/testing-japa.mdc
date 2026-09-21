@@ -1,0 +1,71 @@
+---
+description: Japa testing standards - unit vs functional specs, factories, coverage checklist, running tests
+globs: **/{tests,database/factories}/**/*.ts
+alwaysApply: false
+---
+
+# Testing (Japa)
+
+- Development is test-first — see `tdd-workflow.mdc` (common) for the Red → Green → Refactor cycle. This rule covers testing conventions themselves.
+- `yarn test` must pass before finishing any task.
+- Place: `tests/unit/` for services/pure logic, `tests/functional/` for HTTP endpoints.
+- Naming: `<feature>.spec.ts` mirroring the domain (`purchase_requests.spec.ts`).
+- Use `test.group('<Domain>', ...)` with `group.each.setup(() => testUtils.db().withGlobalTransaction())` in functional tests.
+
+## Unit Tests (services)
+
+Test pure business rules without HTTP:
+
+```typescript
+import { test } from '@japa/runner'
+import PurchaseRequestService from '#services/purchase_request_service'
+import { InvalidStatusTransitionError } from '#services/purchase_request_service'
+
+test('rejects invalid status transition', async ({ assert }) => {
+  const service = new PurchaseRequestService()
+  assert.throws(
+    () => service.validateTransition('draft', 'approved'),
+    InvalidStatusTransitionError
+  )
+})
+```
+
+## Functional Tests (HTTP)
+
+```typescript
+test('expert can create draft purchase request', async ({ client, assert }) => {
+  const user = await UserFactory.create()
+  const token = await User.accessTokens.create(user)
+  const source = await SourceFactory.create()
+
+  const response = await client
+    .post('/api/v1/purchase-requests')
+    .header('Authorization', `Bearer ${token.value!.release()}`)
+    .json({ notes: 'Test', items: [{ sourceId: source.id, priceCents: 1000 }] })
+
+  response.assertStatus(201)
+  assert.equal(response.body().data.status.id, 'draft')
+})
+```
+
+## What to Test (checklist per feature)
+
+- Happy path for each endpoint/action.
+- Validation failures (`422`) and auth failures (`401`).
+- Authorization: ownership (other user's resource → `404`), role guards (wrong role → `403`).
+- State transitions: invalid transition → `400`, terminal states immutable.
+- Every new endpoint needs at least one functional test; every service method with branching logic needs unit tests.
+
+## Factories
+
+- One factory per model in `database/factories/`, exported as `XFactory`, registered in `database/factories/index.ts`.
+- Use states for statuses (`.apply('pending')`, `.apply('success')`) instead of inline `merge({ status })` when the state sets multiple fields.
+- `faker` for values; keep amounts as integer cents.
+- Never call factories in production code paths.
+
+## Running
+
+```bash
+yarn test                     # all
+npx japa tests/unit/...       # single file
+```

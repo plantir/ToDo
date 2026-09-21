@@ -1,0 +1,37 @@
+---
+description: Svelte 5 runes-based component patterns - state, props, events, snippets, structure
+globs: **/*.svelte, **/*.svelte.ts
+alwaysApply: false
+---
+
+# Svelte 5 Conventions
+
+- Use runes, never legacy syntax: `let x = $state(0)`, `const y = $derived(x * 2)`, `$effect(() => {...})`.
+- Props: `let { title, onSave }: Props = $props();` with a typed `interface Props`. Mark two-way props with `$bindable()`.
+- Events: use DOM attribute syntax `onclick={handler}`, never `on:click`. Component callbacks are plain props (`onSave`), never `createEventDispatcher`.
+- Snippets instead of slots: `{#snippet children(item)}...{/snippet}` + `{@render children(item)}`.
+- Always key each blocks: `{#each items as item (item.id)}`.
+- Runes work in `.svelte.ts` modules — put shared reactive logic there instead of stores. Stores only for truly global state.
+- Never mutate props directly; derive locally or use callbacks.
+
+## Component structure order
+
+1. `<script lang="ts">` — types, runes, helpers
+2. Markup
+3. `<style>` — scoped, only when utilities cannot express it
+
+```svelte
+<script lang="ts">
+  interface Props {
+    label: string;
+    count?: number;
+    onSave?: (n: number) => void;
+  }
+
+  let { label, count = 0, onSave }: Props = $props();
+
+  let doubled = $derived(count * 2);
+</script>
+
+<button onclick={() => onSave?.(doubled)}>{label}: {doubled}</button>
+```

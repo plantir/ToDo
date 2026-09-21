@@ -1,0 +1,51 @@
+---
+description: Layered API architecture - controller/service/model/validator/transformer layers, response envelope, money as cents
+alwaysApply: false
+---
+
+# API Layered Architecture
+
+## Layering
+
+Requests flow through exactly these layers. Never skip or merge them:
+
+```
+Route → Middleware → Controller → Service → Model (ORM) → Transformer
+```
+
+- **Controllers** (`app/controllers/`): HTTP only — validate input, call services/models, return transformed responses. No business logic.
+- **Services** (`app/services/`): Business logic, state transitions, multi-model queries. Throw typed errors, never return HTTP responses.
+- **Models** (`app/models/`): ORM — columns, relations, computed getters. No HTTP or workflow logic.
+- **Validators** (`app/validators/`): schemas for every request payload/query.
+- **Transformers** (`app/transformers/`): Model → JSON serialization. Controllers never return raw models.
+
+## Response Envelope
+
+Success:
+
+```typescript
+return response.ok({ data: Transformer.transformDetail(model) })
+return response.created({ data: Transformer.transformDetail(model) })
+return response.ok({
+  data: items,
+  meta: { total, page, perPage, lastPage },
+})
+```
+
+Errors — always `{ message, code }`, mapped centrally in `app/exceptions/handler.ts`:
+
+```json
+{ "message": "Resource not found", "code": "E_NOT_FOUND" }
+```
+
+Add new domain errors to the handler; keep codes prefixed with `E_`.
+
+## Money
+
+Store all monetary values as **integer cents** (`priceCents`) — never floats. Serialize via a `MoneyService` as `{ cents, display }`.
+
+## Authorization
+
+- Bearer token auth via `middleware.auth()`; every non-public route is guarded at the route level.
+- Authorization order: authentication (middleware) → ownership (owner check or query scope) → role (model getters like `user.isAdmin`, not inline role string comparisons in controllers).
+- Scope reads/writes by ownership (`.where('owner_id', user.id)`).
